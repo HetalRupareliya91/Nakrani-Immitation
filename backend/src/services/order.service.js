@@ -1,0 +1,23 @@
+const Order = require('../models/Order');
+const escapeRegex = require('../utils/escapeRegex');
+
+async function list(query = {}) {
+  const page = Math.max(parseInt(query.page, 10) || 1, 1);
+  const limit = Math.min(parseInt(query.limit, 10) || 20, 100);
+  const filter = {};
+  if (query.search) filter.orderNumber = new RegExp(escapeRegex(query.search), 'i');
+
+  const [items, total] = await Promise.all([
+    Order.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+    Order.countDocuments(filter),
+  ]);
+
+  return { items, total, page, pages: Math.ceil(total / limit) };
+}
+
+const getById = (id) => Order.findById(id);
+const create = (data) => Order.create(data);
+const update = (id, data) => Order.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+const remove = (id) => Order.findByIdAndDelete(id);
+
+module.exports = { list, getById, create, update, remove };
